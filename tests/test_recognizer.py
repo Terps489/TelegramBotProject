@@ -1,9 +1,3 @@
-"""Юнит-тесты для модуля распознавания.
-
-Реальную модель EasyOCR не дёргаем — она тяжёлая и требует скачивания
-весов. Вместо этого подменяем reader и проверяем, что обёртка корректно
-преобразует «сырые» данные EasyOCR в OCRResult.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -67,7 +61,7 @@ def test_recognizer_uses_injected_reader(tmp_path: Path):
     ]
 
     recognizer = OCRRecognizer(languages=("en",))
-    recognizer._reader = fake_reader  # подменяем тяжёлую зависимость
+    recognizer._reader = fake_reader
 
     result = recognizer.recognize(img_path)
 

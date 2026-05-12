@@ -1,12 +1,3 @@
-"""Предобработка изображений для повышения качества OCR.
-
-Шаги конвейера:
-    1. чтение изображения из файла;
-    2. перевод в grayscale;
-    3. шумоподавление;
-    4. бинаризация (адаптивный или Otsu thresholding);
-    5. опциональное изменение размера, если изображение слишком маленькое.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,12 +13,10 @@ MAX_SIDE_PX = 2000
 
 
 def read_image(path: PathLike) -> np.ndarray:
-    """Читает изображение с диска. Корректно работает с не-ASCII путями (Windows)."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Файл не найден: {path}")
-    # cv2.imread на Windows может падать с кириллическими путями,
-    # поэтому читаем через numpy.fromfile + cv2.imdecode.
+    # cv2.imread на Windows ломается на не-ASCII путях: читаем через imdecode.
     raw = np.fromfile(str(path), dtype=np.uint8)
     if raw.size == 0:
         raise ValueError(f"Файл пуст или не читается: {path}")
@@ -46,24 +35,15 @@ def to_grayscale(image: np.ndarray) -> np.ndarray:
 
 
 def denoise(image: np.ndarray) -> np.ndarray:
-    """Шумоподавление с сохранением резкости границ символов."""
     return cv2.fastNlMeansDenoising(image, h=10, templateWindowSize=7, searchWindowSize=21)
 
 
 def binarize(image: np.ndarray) -> np.ndarray:
-    """Бинаризация: Otsu — устойчиво для большинства сканов и фото текста."""
-    _, binary = cv2.threshold(
-        image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-    )
+    _, binary = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     return binary
 
 
 def resize_if_needed(image: np.ndarray) -> np.ndarray:
-    """Масштабирует изображение, если оно слишком маленькое/огромное.
-
-    Слишком мелкие картинки EasyOCR распознаёт плохо; слишком крупные —
-    долго и без выигрыша в качестве.
-    """
     h, w = image.shape[:2]
     longest = max(h, w)
 
@@ -81,7 +61,6 @@ def resize_if_needed(image: np.ndarray) -> np.ndarray:
 
 
 def preprocess(path: PathLike) -> np.ndarray:
-    """Полный конвейер предобработки: путь → готовое к OCR изображение."""
     image = read_image(path)
     image = resize_if_needed(image)
     gray = to_grayscale(image)

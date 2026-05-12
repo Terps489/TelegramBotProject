@@ -1,4 +1,3 @@
-"""Обёртка над EasyOCR с предобработкой и измерением времени."""
 from __future__ import annotations
 
 import logging
@@ -18,8 +17,6 @@ PathLike = Union[str, Path]
 
 
 class OCRRecognizer:
-    """Ленивая инициализация EasyOCR + потокобезопасный вызов."""
-
     def __init__(self, languages: Iterable[str] = ("ru", "en"), gpu: bool = False) -> None:
         self.languages: List[str] = list(languages)
         self.gpu = gpu
@@ -27,7 +24,6 @@ class OCRRecognizer:
         self._lock = Lock()
 
     def warmup(self) -> None:
-        """Принудительная инициализация модели до первого запроса."""
         self._ensure_reader()
 
     def _ensure_reader(self):
@@ -35,16 +31,13 @@ class OCRRecognizer:
             return self._reader
         with self._lock:
             if self._reader is None:
-                # Импортируем здесь, чтобы тесты, не использующие EasyOCR,
-                # могли импортировать модуль без тяжёлых зависимостей.
-                import easyocr  # noqa: WPS433
+                import easyocr
 
                 log.info("Загружаю модели EasyOCR (%s, gpu=%s)...", self.languages, self.gpu)
                 self._reader = easyocr.Reader(self.languages, gpu=self.gpu, verbose=False)
         return self._reader
 
     def recognize(self, image_path: PathLike) -> OCRResult:
-        """Возвращает агрегированный результат распознавания."""
         start = time.perf_counter()
         processed = preprocess(image_path)
         reader = self._ensure_reader()
@@ -56,10 +49,6 @@ class OCRRecognizer:
 
 
 def _to_box(raw_item) -> OCRBox:
-    """Преобразует «сырой» элемент EasyOCR в OCRBox.
-
-    EasyOCR возвращает кортеж (bbox, text, confidence).
-    """
     bbox, text, confidence = raw_item
     normalized_bbox = tuple((int(x), int(y)) for x, y in bbox)
     return OCRBox(
@@ -69,10 +58,9 @@ def _to_box(raw_item) -> OCRBox:
     )
 
 
-# Утилита, удобная для тестов: распознать уже подготовленный numpy-массив.
 def recognize_array(recognizer: OCRRecognizer, array: np.ndarray) -> OCRResult:
     start = time.perf_counter()
-    reader = recognizer._ensure_reader()  # noqa: SLF001 — внутренняя утилита
+    reader = recognizer._ensure_reader()
     raw = reader.readtext(array, detail=1, paragraph=False)
     elapsed = time.perf_counter() - start
     return OCRResult(boxes=[_to_box(i) for i in raw], elapsed_seconds=elapsed)

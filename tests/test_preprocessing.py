@@ -1,9 +1,3 @@
-"""Юнит-тесты для модуля предобработки изображений.
-
-Тесты намеренно не требуют реальных файлов — синтетические массивы
-генерируются на лету через numpy/OpenCV, чтобы их можно было прогнать в CI
-без подгрузки моделей и без интернет-соединения.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -16,7 +10,6 @@ from ocr import preprocessing
 
 
 def _synthetic_text_image(width: int = 800, height: int = 200) -> np.ndarray:
-    """Белый фон с чёрной строкой текста — годится для базовой проверки."""
     img = np.full((height, width, 3), 255, dtype=np.uint8)
     cv2.putText(
         img,
@@ -40,7 +33,8 @@ def test_to_grayscale_returns_single_channel():
 
 def test_to_grayscale_passes_single_channel_through():
     gray = np.full((100, 100), 128, dtype=np.uint8)
-    assert preprocessing.to_grayscale(gray) is gray or preprocessing.to_grayscale(gray).ndim == 2
+    result = preprocessing.to_grayscale(gray)
+    assert result.ndim == 2
 
 
 def test_binarize_produces_only_two_values():
@@ -60,15 +54,13 @@ def test_denoise_keeps_shape_and_dtype():
 def test_resize_upscales_small_image():
     small = np.full((100, 150, 3), 255, dtype=np.uint8)
     resized = preprocessing.resize_if_needed(small)
-    longest = max(resized.shape[:2])
-    assert longest >= preprocessing.MIN_SIDE_PX
+    assert max(resized.shape[:2]) >= preprocessing.MIN_SIDE_PX
 
 
 def test_resize_downscales_huge_image():
     huge = np.full((3000, 4000, 3), 255, dtype=np.uint8)
     resized = preprocessing.resize_if_needed(huge)
-    longest = max(resized.shape[:2])
-    assert longest <= preprocessing.MAX_SIDE_PX
+    assert max(resized.shape[:2]) <= preprocessing.MAX_SIDE_PX
 
 
 def test_resize_keeps_image_in_range():

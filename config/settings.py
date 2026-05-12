@@ -1,4 +1,3 @@
-"""Чтение настроек приложения из .env и переменных окружения."""
 from __future__ import annotations
 
 import os
@@ -13,7 +12,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 
 class ConfigError(RuntimeError):
-    """Ошибки конфигурации (например, не задан обязательный параметр)."""
+    pass
 
 
 @dataclass
@@ -41,7 +40,6 @@ def _parse_languages(value: str | None) -> List[str]:
 
 
 def get_settings() -> Settings:
-    """Читает .env и возвращает объект настроек. Бросает ConfigError, если что-то не так."""
     load_dotenv(PROJECT_ROOT / ".env", override=False)
 
     token = os.getenv("BOT_TOKEN", "").strip()

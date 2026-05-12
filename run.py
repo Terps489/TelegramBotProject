@@ -1,4 +1,3 @@
-"""Точка входа для запуска Telegram-бота распознавания текста."""
 import asyncio
 import logging
 import sys
@@ -14,7 +13,6 @@ def configure_logging() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         stream=sys.stdout,
     )
-    # EasyOCR и PIL слишком многословны — приглушаем
     logging.getLogger("easyocr").setLevel(logging.WARNING)
     logging.getLogger("PIL").setLevel(logging.WARNING)
 

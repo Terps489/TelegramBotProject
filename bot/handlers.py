@@ -1,4 +1,3 @@
-"""Хендлеры команд и входящих сообщений Telegram-бота."""
 import logging
 import uuid
 from pathlib import Path
@@ -39,7 +38,6 @@ async def handle_photo(
     recognizer: OCRRecognizer,
     settings: Settings,
 ) -> None:
-    # Берём самый крупный размер — последний элемент списка.
     photo: PhotoSize = message.photo[-1]
     await _process_image(
         message=message,
@@ -141,7 +139,7 @@ async def _process_image(
     )
     await status.edit_text(response)
     log.info(
-        "Распознан текст: user=%s, символов=%d, время=%.2fс, conf=%s",
+        "OCR: user=%s, символов=%d, время=%.2fс, conf=%s",
         message.from_user.id if message.from_user else "?",
         len(result.text),
         result.elapsed_seconds,

@@ -1,4 +1,3 @@
-"""Инициализация и запуск Telegram-бота на aiogram 3.x (long polling)."""
 import logging
 
 from aiogram import Bot, Dispatcher
@@ -14,17 +13,15 @@ log = logging.getLogger(__name__)
 
 async def run_bot() -> None:
     settings = get_settings()
-    log.info("Загружены настройки. Языки OCR: %s", settings.ocr_languages)
+    log.info("Языки OCR: %s", settings.ocr_languages)
 
-    # Инициализируем OCR заранее — первая загрузка моделей долгая,
-    # лучше дождаться её до приёма сообщений, чем заставлять ждать пользователя.
-    log.info("Инициализация EasyOCR (может занять до минуты при первом запуске)...")
+    log.info("Инициализация EasyOCR...")
     recognizer = OCRRecognizer(
         languages=settings.ocr_languages,
         gpu=settings.use_gpu,
     )
     recognizer.warmup()
-    log.info("EasyOCR готов к работе.")
+    log.info("EasyOCR готов.")
 
     bot = Bot(
         token=settings.bot_token,
@@ -36,7 +33,7 @@ async def run_bot() -> None:
     dp.include_router(router)
 
     me = await bot.get_me()
-    log.info("Бот запущен: @%s (id=%s). Режим: long polling.", me.username, me.id)
+    log.info("Бот запущен: @%s (id=%s)", me.username, me.id)
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:

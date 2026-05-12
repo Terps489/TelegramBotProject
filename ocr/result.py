@@ -1,12 +1,9 @@
-"""Структура данных результата распознавания."""
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 
 @dataclass
 class OCRBox:
-    """Один распознанный фрагмент: текст, уверенность и bbox."""
-
     text: str
     confidence: float
     bbox: Tuple[Tuple[int, int], ...] = field(default_factory=tuple)
@@ -14,8 +11,6 @@ class OCRBox:
 
 @dataclass
 class OCRResult:
-    """Агрегированный результат распознавания всего изображения."""
-
     boxes: List[OCRBox]
     elapsed_seconds: float
 
