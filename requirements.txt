@@ -1,0 +1,9 @@
+aiogram>=3.4,<4.0
+python-dotenv>=1.0.0
+easyocr>=1.7.1
+opencv-python>=4.8.0
+numpy>=1.24,<2.3
+Pillow>=10.0.0
+
+# Тесты
+pytest>=7.4
