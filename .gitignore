@@ -43,6 +43,12 @@ data/results/*
 .EasyOCR/
 ~/.EasyOCR/
 
+# --- Кастомные fine-tuned веса (хранятся локально) ---
+data/models/custom/*
+!data/models/custom/.gitkeep
+data/models/user_network/*
+!data/models/user_network/.gitkeep
+
 # --- IDE и редакторы ---
 .idea/
 .vscode/

@@ -3,12 +3,14 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
+DEFAULT_CUSTOM_MODELS_DIR = DATA_DIR / "models" / "custom"
+DEFAULT_USER_NETWORK_DIR = DATA_DIR / "models" / "user_network"
 
 
 class ConfigError(RuntimeError):
@@ -24,6 +26,14 @@ class Settings:
     keep_uploads: bool = False
     uploads_dir: Path = DATA_DIR / "uploads"
     results_dir: Path = DATA_DIR / "results"
+
+    ocr_model: str = "easyocr"
+    custom_recog_network: Optional[str] = None
+    custom_models_dir: Path = DEFAULT_CUSTOM_MODELS_DIR
+    custom_user_network_dir: Path = DEFAULT_USER_NETWORK_DIR
+
+    use_deskew: bool = True
+    use_orientation_correction: bool = False
 
 
 def _parse_bool(value: str | None, default: bool = False) -> bool:
@@ -56,12 +66,26 @@ def get_settings() -> Settings:
     if max_size <= 0:
         raise ConfigError("MAX_FILE_SIZE_MB должен быть больше нуля.")
 
+    ocr_model = os.getenv("OCR_MODEL", "easyocr").strip().lower() or "easyocr"
+    if ocr_model not in {"easyocr", "finetuned"}:
+        raise ConfigError("OCR_MODEL должен быть easyocr или finetuned.")
+
+    custom_recog = os.getenv("CUSTOM_RECOG_NETWORK", "").strip() or None
+    if ocr_model == "finetuned" and not custom_recog:
+        raise ConfigError("Для OCR_MODEL=finetuned нужно указать CUSTOM_RECOG_NETWORK.")
+
     settings = Settings(
         bot_token=token,
         ocr_languages=_parse_languages(os.getenv("OCR_LANGUAGES")),
         use_gpu=_parse_bool(os.getenv("USE_GPU"), default=False),
         max_file_size_mb=max_size,
         keep_uploads=_parse_bool(os.getenv("KEEP_UPLOADS"), default=False),
+        ocr_model=ocr_model,
+        custom_recog_network=custom_recog,
+        custom_models_dir=Path(os.getenv("CUSTOM_MODELS_DIR", str(DEFAULT_CUSTOM_MODELS_DIR))),
+        custom_user_network_dir=Path(os.getenv("CUSTOM_USER_NETWORK_DIR", str(DEFAULT_USER_NETWORK_DIR))),
+        use_deskew=_parse_bool(os.getenv("USE_DESKEW"), default=True),
+        use_orientation_correction=_parse_bool(os.getenv("USE_ORIENTATION_CORRECTION"), default=False),
     )
 
     settings.uploads_dir.mkdir(parents=True, exist_ok=True)

@@ -13,7 +13,15 @@ from ocr.result import OCRBox, OCRResult
 
 def _write_blank_image(path: Path) -> None:
     img = np.full((400, 800, 3), 255, dtype=np.uint8)
-    cv2.imwrite(str(path), img)
+    ok, buf = cv2.imencode(path.suffix, img)
+    assert ok
+    path.write_bytes(buf.tobytes())
+
+
+def _fake_model(detections):
+    model = MagicMock()
+    model.recognize.return_value = detections
+    return model
 
 
 def test_to_box_parses_easyocr_tuple():
@@ -50,37 +58,38 @@ def test_ocr_result_is_empty_when_no_text():
     assert result.average_confidence is None
 
 
-def test_recognizer_uses_injected_reader(tmp_path: Path):
+def test_recognizer_uses_injected_model(tmp_path: Path):
     img_path = tmp_path / "blank.png"
     _write_blank_image(img_path)
 
-    fake_reader = MagicMock()
-    fake_reader.readtext.return_value = [
+    model = _fake_model([
         ([[0, 0], [50, 0], [50, 20], [0, 20]], "Hello", 0.95),
         ([[0, 30], [60, 30], [60, 50], [0, 50]], "world", 0.85),
-    ]
+    ])
 
-    recognizer = OCRRecognizer(languages=("en",))
-    recognizer._reader = fake_reader
-
+    recognizer = OCRRecognizer(model=model)
     result = recognizer.recognize(img_path)
 
-    fake_reader.readtext.assert_called_once()
+    model.recognize.assert_called_once()
     assert result.text == "Hello\nworld"
     assert result.average_confidence == pytest.approx(0.9)
     assert result.elapsed_seconds >= 0
 
 
-def test_recognizer_empty_when_reader_returns_nothing(tmp_path: Path):
+def test_recognizer_empty_when_model_returns_nothing(tmp_path: Path):
     img_path = tmp_path / "blank.png"
     _write_blank_image(img_path)
 
-    fake_reader = MagicMock()
-    fake_reader.readtext.return_value = []
-
-    recognizer = OCRRecognizer(languages=("en",))
-    recognizer._reader = fake_reader
-
+    recognizer = OCRRecognizer(model=_fake_model([]))
     result = recognizer.recognize(img_path)
     assert result.is_empty
     assert result.average_confidence is None
+
+
+def test_recognize_array_skips_preprocessing():
+    model = _fake_model([([[0, 0], [10, 0], [10, 5], [0, 5]], "abc", 0.5)])
+    recognizer = OCRRecognizer(model=model)
+    array = np.full((100, 200, 3), 255, dtype=np.uint8)
+    result = recognizer.recognize_array(array)
+    model.recognize.assert_called_once()
+    assert result.text == "abc"
